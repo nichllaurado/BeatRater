@@ -24,12 +24,14 @@ export default function UploadModal({ setShowModal, onUploadSuccess }: UploadMod
         setError("");
 
         const fileName = `${Date.now()}-${file.name}`;
+        const { data: { user } } = await supabase.auth.getUser();
+
         const { error: storageError } = await supabase.storage
             .from("beats-audio")
             .upload(fileName, file);
 
         if (storageError) {
-            setError("Failed to upload file.");
+            setError(`Storage error: ${storageError.message}`);
             setUploading(false);
             return;
         }
@@ -40,10 +42,10 @@ export default function UploadModal({ setShowModal, onUploadSuccess }: UploadMod
 
         const { error: dbError } = await supabase
             .from("beats")
-            .insert({ beat_name: beatName, artist_name: artistName, file_url: urlData.publicUrl });
+            .insert({ beat_name: beatName, artist_name: artistName, file_url: urlData.publicUrl, user_id: user?.id });
 
         if (dbError) {
-            setError("Failed to save beat info.");
+            setError(`DB error: ${dbError.message}`);
             setUploading(false);
             return;
         }
