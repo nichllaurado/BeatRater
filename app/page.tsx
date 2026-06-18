@@ -1,6 +1,7 @@
 "use client";
 import UploadModal from "@/components/upload-modal";
 import AuthModal from "@/components/auth-modal";
+import TopTen from "@/components/top-ten";
 import { useState, useEffect } from "react";
 import { supabase, type Beat } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -113,6 +114,14 @@ export default function Home() {
       if (prev === null) return 0;
       return (prev + 1) % beats.length;
     });
+  };
+
+  const handlePlayFromList = (beatId: string) => {
+    const idx = beats.findIndex((b) => b.id === beatId);
+    if (idx !== -1) {
+      setCurrentIndex(idx);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const handleSignOut = async () => {
@@ -228,6 +237,12 @@ export default function Home() {
           Upload Beat
         </button>
       )}
+
+      {/* Top 10 */}
+      <div className="mt-16 w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-4 text-center">Top 10 Beats</h2>
+        <TopTen onPlay={handlePlayFromList} activeBeatId={currentBeat?.id} />
+      </div>
 
       {showModal && (
         <UploadModal setShowModal={setShowModal} onUploadSuccess={fetchBeats} />
