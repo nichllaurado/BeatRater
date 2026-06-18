@@ -18,7 +18,6 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     setLoading(true);
     setError("");
     setMessage("");
-
     if (mode === "signin") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
@@ -38,25 +37,29 @@ export default function AuthModal({ onClose }: AuthModalProps) {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    }
+    if (error) { setError(error.message); setLoading(false); }
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="relative bg-white p-8 rounded-xl shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-bold mb-6 text-center">
-          {mode === "signin" ? "Sign In" : "Create Account"}
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50 backdrop-blur-sm">
+      <div className="relative bg-[#161616] border border-white/10 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-600 hover:text-gray-400 transition-colors"
+        >
+          ✕
+        </button>
+
+        <h2 className="text-xl font-bold mb-6 text-center">
+          {mode === "signin" ? "Welcome back" : "Create account"}
         </h2>
 
         <button
           onClick={handleGoogleAuth}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 mb-4"
+          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors mb-4 text-sm"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -66,15 +69,15 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <hr className="flex-1 border-gray-200" />
-          <span className="text-sm text-gray-400">or</span>
-          <hr className="flex-1 border-gray-200" />
+          <hr className="flex-1 border-white/10" />
+          <span className="text-xs text-gray-600">or</span>
+          <hr className="flex-1 border-white/10" />
         </div>
 
         <input
           type="email"
           placeholder="Email"
-          className="w-full mb-3 p-2 border border-gray-300 rounded-lg"
+          className="w-full mb-3 p-2.5 bg-white/5 border border-white/10 rounded-lg text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
@@ -82,39 +85,32 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         <input
           type="password"
           placeholder="Password"
-          className="w-full mb-4 p-2 border border-gray-300 rounded-lg"
+          className="w-full mb-4 p-2.5 bg-white/5 border border-white/10 rounded-lg text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
         />
 
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        {message && <p className="text-green-600 text-sm mb-3">{message}</p>}
+        {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+        {message && <p className="text-green-400 text-xs mb-3">{message}</p>}
 
         <button
           onClick={handleEmailAuth}
           disabled={loading}
-          className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+          className="w-full py-2.5 bg-purple-500 text-black font-medium rounded-lg text-sm hover:bg-purple-400 disabled:opacity-50 transition-colors"
         >
           {loading ? "..." : mode === "signin" ? "Sign In" : "Create Account"}
         </button>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
+        <p className="text-center text-xs text-gray-600 mt-4">
+          {mode === "signin" ? "No account?" : "Already have one?"}{" "}
           <button
-            className="text-blue-600 hover:underline"
+            className="text-purple-400 hover:underline"
             onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setMessage(""); }}
           >
             {mode === "signin" ? "Sign up" : "Sign in"}
           </button>
         </p>
-
-        <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-          onClick={onClose}
-        >
-          ✕
-        </button>
       </div>
     </div>
   );

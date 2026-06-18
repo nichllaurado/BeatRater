@@ -13,7 +13,6 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
-  // Rating state
   const [selectedRating, setSelectedRating] = useState(0);
   const [savedRating, setSavedRating] = useState(0);
   const [avgRating, setAvgRating] = useState<number | null>(null);
@@ -33,50 +32,35 @@ export default function Home() {
     if (data) setBeats(data);
   };
 
-  useEffect(() => {
-    fetchBeats();
-  }, []);
+  useEffect(() => { fetchBeats(); }, []);
 
   const currentBeat = currentIndex !== null ? beats[currentIndex] : null;
 
-  // Load ratings when beat or user changes
   useEffect(() => {
     if (!currentBeat) return;
-
     setSelectedRating(0);
     setSavedRating(0);
     setAvgRating(null);
     setRatingCount(0);
 
     const loadRatings = async () => {
-      // Average rating for this beat (public)
       const { data: allRatings } = await supabase
-        .from("ratings")
-        .select("rating")
-        .eq("beat_id", currentBeat.id);
-
+        .from("ratings").select("rating").eq("beat_id", currentBeat.id);
       if (allRatings && allRatings.length > 0) {
         const avg = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length;
         setAvgRating(Math.round(avg * 10) / 10);
         setRatingCount(allRatings.length);
       }
-
-      // User's own rating
       if (user) {
         const { data: userRating } = await supabase
-          .from("ratings")
-          .select("rating")
-          .eq("beat_id", currentBeat.id)
-          .eq("user_id", user.id)
-          .maybeSingle();
-
+          .from("ratings").select("rating")
+          .eq("beat_id", currentBeat.id).eq("user_id", user.id).maybeSingle();
         if (userRating) {
           setSavedRating(userRating.rating);
           setSelectedRating(userRating.rating);
         }
       }
     };
-
     loadRatings();
   }, [currentBeat?.id, user?.id]);
 
@@ -84,21 +68,14 @@ export default function Home() {
     if (!user || !currentBeat) return;
     setSelectedRating(star);
     setSavingRating(true);
-
-    const { error } = await supabase
-      .from("ratings")
-      .upsert(
-        { user_id: user.id, beat_id: currentBeat.id, rating: star },
-        { onConflict: "user_id,beat_id" }
-      );
-
+    const { error } = await supabase.from("ratings").upsert(
+      { user_id: user.id, beat_id: currentBeat.id, rating: star },
+      { onConflict: "user_id,beat_id" }
+    );
     if (!error) {
       setSavedRating(star);
-      // Refresh avg
       const { data: allRatings } = await supabase
-        .from("ratings")
-        .select("rating")
-        .eq("beat_id", currentBeat.id);
+        .from("ratings").select("rating").eq("beat_id", currentBeat.id);
       if (allRatings && allRatings.length > 0) {
         const avg = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length;
         setAvgRating(Math.round(avg * 10) / 10);
@@ -110,10 +87,7 @@ export default function Home() {
 
   const handleNextBeat = () => {
     if (beats.length === 0) return;
-    setCurrentIndex((prev) => {
-      if (prev === null) return 0;
-      return (prev + 1) % beats.length;
-    });
+    setCurrentIndex((prev) => prev === null ? 0 : (prev + 1) % beats.length);
   };
 
   const handlePlayFromList = (beatId: string) => {
@@ -124,132 +98,129 @@ export default function Home() {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const handleSignOut = async () => { await supabase.auth.signOut(); };
 
   return (
-    <div className="flex flex-col items-center justify-between p-24">
-      {/* Auth bar */}
-      <div className="absolute top-4 right-6 flex items-center gap-3">
-        {user ? (
-          <>
-            <span className="text-sm text-gray-600">{user.email}</span>
-            <button
-              onClick={handleSignOut}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded hover:bg-gray-200"
-            >
-              Sign Out
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Sign In
-          </button>
-        )}
-      </div>
+    <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center px-6 py-12">
 
-      <h1 className="text-4xl font-bold">Welcome to BeatRater!</h1>
-
-      <button
-        className="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-        onClick={handleNextBeat}
-        disabled={beats.length === 0}
-      >
-        {beats.length === 0 ? "No beats yet" : "Next Beat"}
-      </button>
-
-      {currentBeat && (
-        <div className="mt-6 flex flex-col items-center">
-          <p className="text-xl font-semibold">{currentBeat.beat_name}</p>
-          <p className="text-gray-500 mb-2">{currentBeat.artist_name}</p>
-          <audio controls key={currentBeat.id}>
-            <source src={currentBeat.file_url} type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-
-          {/* Average rating — shown only after the user has rated */}
-          {savedRating > 0 && (
-            <div className="mt-4 flex flex-col items-center gap-1">
-              <div className="flex text-2xl">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    className={avgRating !== null && star <= Math.round(avgRating) ? "text-yellow-400" : "text-gray-200"}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-              <p className="text-sm text-gray-500">
-                {avgRating !== null
-                  ? <><span className="font-semibold text-gray-700">{avgRating}/5</span> · {ratingCount} {ratingCount === 1 ? "rating" : "ratings"}</>
-                  : "No ratings yet"}
-              </p>
-            </div>
-          )}
-
+      {/* Navbar */}
+      <div className="w-full max-w-2xl flex items-center justify-between mb-12">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Beat<span className="text-purple-400">Rater</span>
+          </h1>
+          <p className="text-xs text-gray-600 mt-0.5">by NickBeatz</p>
+        </div>
+        <div className="flex items-center gap-3">
           {user ? (
-            <div className="flex flex-col items-center mt-3">
-              <div className="flex text-4xl cursor-pointer">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    onClick={() => !savingRating && handleRating(star)}
-                    className={`transition-colors ${
-                      star <= selectedRating ? "text-yellow-400" : "text-gray-300"
-                    } ${savingRating ? "opacity-50 cursor-not-allowed" : "hover:text-yellow-300"}`}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-              <p className="mt-1 text-xs text-gray-400">
-                {savedRating > 0 ? `Your rating: ${savedRating}/5` : "Click to rate"}
-              </p>
-            </div>
+            <>
+              <span className="text-sm text-gray-500 hidden sm:block">{user.email}</span>
+              <button
+                onClick={handleSignOut}
+                className="px-3 py-1.5 text-sm text-gray-400 border border-white/10 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Sign Out
+              </button>
+            </>
           ) : (
-            <p className="mt-4 text-sm text-gray-500">
-              <button onClick={() => setShowAuthModal(true)} className="text-blue-600 hover:underline">
-                Sign in
-              </button>{" "}
-              to leave a rating
-            </p>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-4 py-1.5 text-sm bg-purple-500 text-black font-medium rounded-lg hover:bg-purple-400 transition-colors"
+            >
+              Sign In
+            </button>
           )}
         </div>
-      )}
+      </div>
 
-      {user ? (
-        <button
-          className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          onClick={() => setShowModal(true)}
-        >
-          Upload Beat
-        </button>
-      ) : (
-        <button
-          className="mt-6 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          onClick={() => setShowAuthModal(true)}
-        >
-          Upload Beat
-        </button>
-      )}
+      {/* Player card */}
+      <div className="w-full max-w-2xl bg-[#161616] border border-white/5 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-xl">
+        {currentBeat ? (
+          <>
+            <div className="text-center">
+              <p className="text-xl font-semibold">{currentBeat.beat_name}</p>
+              <p className="text-gray-500 text-sm mt-1">{currentBeat.artist_name}</p>
+            </div>
+            <audio controls key={currentBeat.id} className="w-full">
+              <source src={currentBeat.file_url} type="audio/mpeg" />
+            </audio>
+
+            {/* Avg rating — shown after user rates */}
+            {savedRating > 0 && (
+              <div className="flex flex-col items-center gap-1 border-t border-white/5 pt-4 w-full">
+                <div className="flex text-xl">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className={avgRating !== null && star <= Math.round(avgRating) ? "text-purple-400" : "text-white/10"}>
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {avgRating !== null
+                    ? <><span className="text-gray-300 font-medium">{avgRating}/5</span> · {ratingCount} {ratingCount === 1 ? "rating" : "ratings"}</>
+                    : "No ratings yet"}
+                </p>
+              </div>
+            )}
+
+            {/* User rating */}
+            {user ? (
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex text-4xl gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      onClick={() => !savingRating && handleRating(star)}
+                      className={`cursor-pointer transition-colors ${
+                        star <= selectedRating ? "text-purple-400" : "text-white/15 hover:text-purple-300"
+                      } ${savingRating ? "opacity-40 cursor-not-allowed" : ""}`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-600">
+                  {savedRating > 0 ? `Your rating: ${savedRating}/5` : "Click to rate"}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                <button onClick={() => setShowAuthModal(true)} className="text-purple-400 hover:underline">
+                  Sign in
+                </button>{" "}to leave a rating
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-gray-600 text-sm py-8">Hit &quot;Next Beat&quot; to start listening</p>
+        )}
+
+        {/* Controls */}
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={handleNextBeat}
+            disabled={beats.length === 0}
+            className="px-5 py-2 bg-white/5 border border-white/10 rounded-lg text-sm hover:bg-white/10 disabled:opacity-30 transition-colors"
+          >
+            {beats.length === 0 ? "No beats yet" : "Next Beat"}
+          </button>
+          <button
+            onClick={() => user ? setShowModal(true) : setShowAuthModal(true)}
+            className="px-5 py-2 bg-purple-500 text-black font-medium rounded-lg text-sm hover:bg-purple-400 transition-colors"
+          >
+            Upload Beat
+          </button>
+        </div>
+      </div>
 
       {/* Top 10 */}
-      <div className="mt-16 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4 text-center">Top 10 Beats</h2>
+      <div className="w-full max-w-2xl mt-12">
+        <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-widest mb-4">Top 10</h2>
         <TopTen onPlay={handlePlayFromList} activeBeatId={currentBeat?.id} />
       </div>
 
-      {showModal && (
-        <UploadModal setShowModal={setShowModal} onUploadSuccess={fetchBeats} />
-      )}
-      {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
-      )}
+      {showModal && <UploadModal setShowModal={setShowModal} onUploadSuccess={fetchBeats} />}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }

@@ -30,45 +30,44 @@ export default function TopTen({ onPlay, activeBeatId }: TopTenProps) {
       });
   }, []);
 
-  if (loading) return <p className="text-sm text-gray-400">Loading rankings...</p>;
-  if (beats.length === 0) return <p className="text-sm text-gray-400">No rated beats yet.</p>;
+  if (loading) return <p className="text-sm text-gray-600">Loading rankings...</p>;
+  if (beats.length === 0) return <p className="text-sm text-gray-600">No rated beats yet.</p>;
 
   return (
-    <ol className="w-full max-w-md space-y-2">
+    <ol className="space-y-2">
       {beats.map((beat, i) => {
         const isActive = beat.id === activeBeatId;
         return (
           <li
             key={beat.id}
             onClick={() => onPlay(beat.id)}
-            className={`flex items-center gap-4 rounded-lg px-4 py-3 shadow-sm cursor-pointer transition-colors ${
+            className={`flex items-center gap-4 rounded-xl px-4 py-3 cursor-pointer transition-colors border ${
               isActive
-                ? "bg-blue-50 border border-blue-200"
-                : "bg-white border border-gray-100 hover:bg-gray-50"
+                ? "bg-purple-500/10 border-purple-500/30"
+                : "bg-[#161616] border-white/5 hover:bg-white/5"
             }`}
           >
-            <span className="text-xl font-bold text-gray-300 w-6 text-right shrink-0">
+            <span className="text-base font-bold text-gray-700 w-5 text-right shrink-0">
               {i + 1}
             </span>
-            {/* Play/playing indicator */}
-            <span className="text-lg shrink-0">
+            <span className={`text-sm shrink-0 ${isActive ? "text-purple-400" : "text-gray-600"}`}>
               {isActive ? "▶" : "▷"}
             </span>
             <div className="flex-1 min-w-0">
-              <p className={`font-semibold truncate ${isActive ? "text-blue-700" : "text-gray-900"}`}>
+              <p className={`font-medium truncate ${isActive ? "text-purple-300" : "text-gray-200"}`}>
                 {beat.beat_name}
               </p>
-              <p className="text-sm text-gray-500 truncate">{beat.artist_name}</p>
+              <p className="text-xs text-gray-600 truncate">{beat.artist_name}</p>
             </div>
             <div className="flex flex-col items-end shrink-0">
               <div className="flex text-sm">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className={star <= Math.round(beat.avg_rating) ? "text-yellow-400" : "text-gray-200"}>
+                  <span key={star} className={star <= Math.round(beat.avg_rating) ? "text-purple-400" : "text-white/10"}>
                     ★
                   </span>
                 ))}
               </div>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-600">
                 {beat.avg_rating}/5 · {beat.rating_count} {beat.rating_count === 1 ? "rating" : "ratings"}
               </span>
             </div>
