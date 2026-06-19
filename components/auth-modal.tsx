@@ -10,6 +10,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -23,6 +24,11 @@ export default function AuthModal({ onClose }: AuthModalProps) {
       if (error) setError(error.message);
       else onClose();
     } else {
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        setLoading(false);
+        return;
+      }
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setError(error.message);
       else setMessage("Check your email for a confirmation link!");
@@ -85,11 +91,21 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         <input
           type="password"
           placeholder="Password"
-          className="w-full mb-4 p-2.5 bg-white/5 border border-white/10 rounded-lg text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50"
+          className={`w-full p-2.5 bg-white/5 border border-white/10 rounded-lg text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50 ${mode === "signup" ? "mb-3" : "mb-4"}`}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
         />
+        {mode === "signup" && (
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            className="w-full mb-4 p-2.5 bg-white/5 border border-white/10 rounded-lg text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
+          />
+        )}
 
         {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
         {message && <p className="text-green-400 text-xs mb-3">{message}</p>}
@@ -106,7 +122,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           {mode === "signin" ? "No account?" : "Already have one?"}{" "}
           <button
             className="text-purple-400 hover:underline"
-            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setMessage(""); }}
+            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setMessage(""); setConfirmPassword(""); }}
           >
             {mode === "signin" ? "Sign up" : "Sign in"}
           </button>
